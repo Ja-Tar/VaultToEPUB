@@ -115,4 +115,4 @@ def convert_file_to_xhtml(file_path):
 
 
 if __name__ == "__main__":
-    convert_file_to_xhtml("tests/Ir-1/ROZDZIAŁ 1. POSTANOWIENIA OGÓLNE/§ 2 Podział sieci kolejowej pod względem technicznym.md")
+    convert_file_to_xhtml("tests/examples/one.md")

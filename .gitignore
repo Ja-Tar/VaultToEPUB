@@ -125,3 +125,6 @@ dmypy.json
 
 # ignore Ir-1
 Ir-1/
+
+# obsidian folder
+.obsidian/
