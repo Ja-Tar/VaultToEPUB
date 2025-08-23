@@ -1,5 +1,4 @@
 1. Harum in fugit facere. Est voluptatem amet et dolor vitae quia eligendi. Maiores mollitia iure autem tenetur et necessitatibus ea ratione. Ducimus qui est fuga quo assumenda ut perspiciatis. Laboriosam eos sit ut aliquid omnis. Voluptas eos numquam sapiente. ^[In line footnote 1]
-
 2. Tempore velit dolores ea cumque dolorem saepe. Officiis beatae iusto voluptas sit quasi earum. Quasi ut sapiente quod. Mollitia praesentium tempora laudantium dolor fugit. Et sed voluptas harum est et officiis.
 
 3. Doloremque fugiat et officia. Quis architecto dolorem voluptatem nesciunt. Totam autem voluptas eum soluta. Quaerat quo doloremque aut.
@@ -8,9 +7,6 @@
 
 	1. Eaque quia non non pariatur. Qui magnam velit quas. Odit rerum perferendis repellat rerum ullam aspernatur. Dignissimos et saepe veniam aut reiciendis dolorem eos neque. Aliquid earum a sed rerum blanditiis neque quia. Est vitae deleniti facilis.
 		1. Natus non assumenda quis sed.^[In line footnote 3] Alias ullam adipisci velit ipsa amet porro corporis. Debitis ut et commodi ea. Odio aperiam sint qui est consequatur quo beatae qui.
-
 		2. Sit assumenda beatae ut rerum aut laborum. Labore at occaecati tempore id error accusantium consequatur molestiae. Voluptates deserunt quibusdam quis dolores est possimus accusamus. Maiores aut soluta rem ut quae dignissimos et. Pariatur nesciunt velit fugiat autem ipsa. At excepturi vero cumque fugit molestiae aspernatur.
-
 	2. Aut molestiae quaerat eos sed. Quaerat sapiente ipsam quo dolorem minus autem. Laudantium commodi dolor aperiam. Consequatur aut quis amet voluptatem vel atque non dolorem. Soluta distinctio aperiam natus aut dolore aut. Hic voluptas facilis commodi vero in et.
-
 	3. Iste ut ea maxime sit natus et amet. Vitae est maiores dolorem in id. Quos expedita ipsam deserunt temporibus consequatur hic quo et. Non deserunt illo sed et aut.

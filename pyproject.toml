@@ -1,0 +1,26 @@
+[project]
+name = "vaulttoepub"
+version = "0.1.0"
+description = "A tool to convert Vault notes to EPUB format"
+authors = [
+    { name="JaTar", email="___@example.com" }
+]
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+dependencies = [
+    "rich",
+    "markdown-it-py",
+    "beautifulsoup4",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/vaulttoepub"
+Repository = "https://github.com/yourusername/vaulttoepub"
+
+[project.scripts]
+vaulttoepub = "vaulttoepub:main"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

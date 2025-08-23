@@ -1,22 +1,34 @@
-from pprint import pprint
-from markdown_it import MarkdownIt
+import logging
 import os
 import re
+from rich.logging import RichHandler
+from markdown_it import MarkdownIt
 from bs4 import BeautifulSoup
-from bs4.element import Tag
+from bs4.element import Tag, NavigableString
+
+logging.basicConfig(
+    level="NOTSET",
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler(rich_tracebacks=True)]
+)
 
 md = MarkdownIt()
+log = logging.getLogger("rich")
 
 def convert_markdown_to_html(markdown_text):
+    log.debug("Converting Markdown to HTML")
     return md.render(markdown_text)
 
 
 def get_markdown_from_file(file_path):
+    log.debug(f"Reading Markdown file: {file_path}")
     with open(file_path, "r", encoding="utf-8") as f:
         return f.read()
 
 
 def remove_yaml_frontmatter(markdown_text):
+    log.debug("Removing YAML frontmatter if present")
     if markdown_text.startswith("---"):
         end_idx = markdown_text.find("---", 3)
         if end_idx != -1:
@@ -25,6 +37,7 @@ def remove_yaml_frontmatter(markdown_text):
 
 
 def get_title(file_path):
+    log.debug(f"Getting title from file path: {file_path}")
     return os.path.splitext(os.path.basename(file_path))[0]
 
 
@@ -58,17 +71,13 @@ def convert_section_ids(input_soup: BeautifulSoup):
 
     # add to parent ID
     for text_node in input_soup.find_all(string=re.compile(section_pattern)):
-        if not isinstance(text_node, str):
-            continue
-        match = re.search(section_pattern, text_node)
+        match = re.search(section_pattern, str(text_node))
         if match:
             section_id = match.group(1)
             parent = text_node.parent
             if parent:
                 parent['id'] = section_id
-                # Remove the ^id marker from the text
-                new_text = re.sub(section_pattern, '', text_node)
-                text_node.replace_with(new_text)
+            text_node.replace_with(NavigableString(re.sub(section_pattern, '', str(text_node))))
 
     return input_soup
 
