@@ -6,6 +6,8 @@ from markdown_it import MarkdownIt
 from bs4 import BeautifulSoup
 from bs4.element import Tag, NavigableString
 
+from .obsidian_classes import BottomFootnote, InlineFootnote
+
 logging.basicConfig(
     level="NOTSET",
     format="%(message)s",
@@ -51,42 +53,22 @@ class HTMLConverter:
 
     def get_converted_html(self) -> str:
         return self.converted_html
-
-    def in_line_footnotes(self):
-        # Convert inline footnotes to HTML (" ^[This is inline footnote] ")
+    
+    def footnotes(self):
+        # Convert all footnotes to HTML
         html_input = self.converted_html
-        footnote_pattern = r"\^\[(.+?)\]"
-        footnote_texts = re.findall(footnote_pattern, html_input)
 
-        for i, footnote in enumerate(footnote_texts, start=1):
-            # Replace inline footnotes with EPUB 3-compliant footnote markup
-            footnote_id = f"fn{i}"
-            ref_id = f"fnref{i}"
-            # Replace the inline footnote marker with a superscripted link
-            html_input = html_input.replace(
-                f"^[{footnote}]",
-                f'<sup id="{ref_id}"><a href="#{footnote_id}" epub:type="noteref">{i}</a></sup>',
-            )
-            # Append the footnote at the end of the document (EPUB 3 standard)
-            insert_pos = html_input.rfind("</body>")
-            html_input = (
-                html_input[:insert_pos]
-                + f'\n<aside id="{footnote_id}" epub:type="footnote"><p>{footnote}</p></aside>'
-                + html_input[insert_pos:]
-            )
-        
-        self.converted_html = html_input
+        inline_footnotes = re.findall(InlineFootnote.regex, html_input)
+        bottom_footnotes = re.findall(BottomFootnote.regex, html_input, re.DOTALL)
+        inline_footnotes = [InlineFootnote(footnote) for footnote in inline_footnotes]
+        bottom_footnotes = [BottomFootnote(num, footnote) for num, footnote in bottom_footnotes]
+        footnotes = inline_footnotes + bottom_footnotes
 
-    def bottom_page_footnotes(self):
-        # Convert bottom-page footnotes to HTML
-        # <p>[^1]: Bottom footnote</p>
-        html_input = self.converted_html
-        footnote_pattern = r"\[\^(\d+)\]: (.+?)(?=<)"
-        footnote_texts = re.findall(footnote_pattern, html_input, re.DOTALL)
-
-        #insert_pos = html_input.rfind("</body>")
-
-        print(footnote_texts)
+        for num, footnote in enumerate(footnotes, start=1):
+            if isinstance(footnote, InlineFootnote):
+                html_input = footnote.convert_inline_footnotes(html_input, num)
+            elif isinstance(footnote, BottomFootnote):
+                html_input = footnote.convert_bottom_footnotes(html_input, num)
 
         self.converted_html = html_input
 
@@ -94,8 +76,7 @@ class HTMLConverter:
         # Convert Obsidian markdown to HTML
 
         # Functions that modify html as text
-        self.in_line_footnotes()
-        self.bottom_page_footnotes()
+        self.footnotes()
 
         # Functions that modify html as BeautifulSoup object
         bs_conv = self.BSConverter(self.converted_html)
@@ -158,7 +139,6 @@ def convert_file_to_xhtml(file_path: str):
         f.write(xhtml_content)
 
     return new_file_path
-
 
 if __name__ == "__main__":
     convert_file_to_xhtml("tests/examples/one.md")
