@@ -12,19 +12,20 @@ class InlineFootnote:
     def convert_inline_footnotes(self, html_input: str, num: int) -> str:
         # Replace inline footnotes with EPUB 3-compliant footnote markup
         footnote_id = f"fn{num}"
-        ref_id = f"fnref{num}"
+        ref_id = f"ref_fn{num}"
 
         # Replace the inline footnote marker with a superscripted link
         html_input = html_input.replace(
             f"^[{self.footnote}]",
-            f'<sup id="{ref_id}"><a href="#{footnote_id}" epub:type="noteref">{num}</a></sup>',
+            f'<sup id="{ref_id}"><a href="#{footnote_id}" epub:type="noteref" role="doc-noteref" aria-label="To footnote {num}">{num}</a></sup>',
         )
 
         # Append the footnote at the end of the document (EPUB 3 standard)
         insert_pos = html_input.rfind("</body>")
         html_input = (
             html_input[:insert_pos]
-            + f'\n<aside id="{footnote_id}" epub:type="footnote"><p>{self.footnote}</p></aside>'
+            + f'\n<aside id="{footnote_id}" epub:type="footnote">'
+            + f'<p><a href="#{ref_id}" epub:type="backlink" role="doc-backlink">[{num}]</a>: {self.footnote}</p></aside>'
             + html_input[insert_pos:]
         )
 
@@ -49,7 +50,7 @@ class BottomFootnote:
         inline_regex = r"\[\^" + re.escape(self.connected_to) + r"\](?!:)"
         html_input = re.sub(
             inline_regex,
-            f'<sup id="{ref_id}"><a href="#{footnote_id}" epub:type="noteref">{num}</a></sup>',
+            f'<sup id="{ref_id}"><a href="#{footnote_id}" epub:type="noteref" role="doc-noteref" aria-label="To footnote {num}">{num}</a></sup>',
             html_input
         )
 
@@ -57,7 +58,8 @@ class BottomFootnote:
         insert_pos = html_input.rfind("</body>")
         html_input = (
             html_input[:insert_pos]
-            + f'\n<aside id="{footnote_id}" epub:type="footnote"><p>{self.footnote}</p></aside>'
+            + f'\n<aside id="{footnote_id}" epub:type="footnote">'
+            + f'<p><a href="#{ref_id}" epub:type="backlink" role="doc-backlink">[{num}]</a>: {self.footnote}</p></aside>'
             + html_input[insert_pos:]
         )
 

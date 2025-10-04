@@ -10,7 +10,7 @@ from bs4.element import Tag, NavigableString
 from .obsidian_classes import BottomFootnote, InlineFootnote
 
 logging.basicConfig(
-    level="NOTSET",
+    level="INFO",
     format="%(message)s",
     datefmt="[%X]",
     handlers=[RichHandler(rich_tracebacks=True)]
@@ -20,7 +20,7 @@ md = MarkdownIt()
 log = logging.getLogger("rich")
 
 def get_markdown_from_file(file_path: Path) -> str:
-    log.debug("Reading Markdown file: %s", file_path)
+    log.info("Reading Markdown file: %s", file_path)
     with open(file_path, "r", encoding="utf-8") as f:
         return f.read()
 
@@ -64,6 +64,7 @@ class HTMLConverter:
         inline_footnotes = [InlineFootnote(footnote) for footnote in inline_footnotes]
         bottom_footnotes = [BottomFootnote(num, footnote) for num, footnote in bottom_footnotes]
         footnotes = inline_footnotes + bottom_footnotes
+        log.info("Found %d footnotes", len(footnotes))
 
         for num, footnote in enumerate(footnotes, start=1):
             if isinstance(footnote, InlineFootnote):
@@ -106,6 +107,7 @@ class HTMLConverter:
                     if parent:
                         parent['id'] = section_id
                     text_node.replace_with(NavigableString(re.sub(section_pattern, '', str(text_node))))
+                    log.info("Converted section ID: %s", section_id)
 
             self.soup = input_soup
 
