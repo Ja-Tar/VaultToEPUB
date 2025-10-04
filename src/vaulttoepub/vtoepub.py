@@ -16,88 +16,125 @@ logging.basicConfig(
 md = MarkdownIt()
 log = logging.getLogger("rich")
 
-def convert_markdown_to_html(markdown_text):
-    log.debug("Converting Markdown to HTML")
-    return md.render(markdown_text)
+def get_markdown_from_file(file_path) -> str:
+        log.debug("Reading Markdown file: %s", file_path)
+        with open(file_path, "r", encoding="utf-8") as f:
+            return f.read()
 
+class MDConverter:
+    def __init__(self, markdown_text: str) -> None:
+        self.markdown_text = markdown_text
 
-def get_markdown_from_file(file_path):
-    log.debug(f"Reading Markdown file: {file_path}")
-    with open(file_path, "r", encoding="utf-8") as f:
-        return f.read()
+    def convert_markdown_to_html(self):
+        log.debug("Converting Markdown to HTML")
+        return md.render(self.markdown_text)
+        
+    def remove_yaml_frontmatter(self):
+        log.debug("Removing YAML frontmatter if present")
+        _markdown_text = self.markdown_text
+        if _markdown_text.startswith("---"):
+            end_idx = _markdown_text.find("---", 3)
+            if end_idx != -1:
+                self.markdown_text = _markdown_text[end_idx + 3 :].strip()
+                return
+            
+    def get_title(self, file_path: str):
+        log.debug("Getting title from file path: %s", file_path)
+        return os.path.splitext(os.path.basename(file_path))[0]
+    
+    def get_markdown(self) -> str:
+        return self.markdown_text
 
+class HTMLConverter:
+    def __init__(self, converted_html) -> None:
+        self.converted_html = converted_html
 
-def remove_yaml_frontmatter(markdown_text):
-    log.debug("Removing YAML frontmatter if present")
-    if markdown_text.startswith("---"):
-        end_idx = markdown_text.find("---", 3)
-        if end_idx != -1:
-            return markdown_text[end_idx + 3 :].strip()
-    return markdown_text
+    def get_converted_html(self) -> str:
+        return self.converted_html
 
+    def in_line_footnotes(self):
+        # Convert inline footnotes to HTML (" ^[This is inline footnote] ")
+        html_input = self.converted_html
+        footnote_pattern = r"\^\[(.+?)\]"
+        footnote_texts = re.findall(footnote_pattern, html_input)
 
-def get_title(file_path):
-    log.debug(f"Getting title from file path: {file_path}")
-    return os.path.splitext(os.path.basename(file_path))[0]
+        for i, footnote in enumerate(footnote_texts, start=1):
+            # Replace inline footnotes with EPUB 3-compliant footnote markup
+            footnote_id = f"fn{i}"
+            ref_id = f"fnref{i}"
+            # Replace the inline footnote marker with a superscripted link
+            html_input = html_input.replace(
+                f"^[{footnote}]",
+                f'<sup id="{ref_id}"><a href="#{footnote_id}" epub:type="noteref">{i}</a></sup>',
+            )
+            # Append the footnote at the end of the document (EPUB 3 standard)
+            insert_pos = html_input.rfind("</body>")
+            html_input = (
+                html_input[:insert_pos]
+                + f'\n<aside id="{footnote_id}" epub:type="footnote"><p>{footnote}</p></aside>'
+                + html_input[insert_pos:]
+            )
+        
+        self.converted_html = html_input
 
+    def bottom_page_footnotes(self):
+        # Convert bottom-page footnotes to HTML
+        # <p>[^1]: Bottom footnote</p>
+        html_input = self.converted_html
+        footnote_pattern = r"\[\^(\d+)\]: (.+?)(?=<)"
+        footnote_texts = re.findall(footnote_pattern, html_input, re.DOTALL)
 
-def in_line_footnotes(html_input):
-    # Convert inline footnotes to HTML (" ^[This is inline footnote] ")
-    footnote_pattern = r"\^\[(.+?)\]"
-    footnote_texts = re.findall(footnote_pattern, html_input)
+        #insert_pos = html_input.rfind("</body>")
 
-    for i, footnote in enumerate(footnote_texts, start=1):
-        # Replace inline footnotes with EPUB 3-compliant footnote markup
-        footnote_id = f"fn{i}"
-        ref_id = f"fnref{i}"
-        # Replace the inline footnote marker with a superscripted link
-        html_input = html_input.replace(
-            f"^[{footnote}]",
-            f'<sup id="{ref_id}"><a href="#{footnote_id}" epub:type="noteref">{i}</a></sup>',
-        )
-        # Append the footnote at the end of the document (EPUB 3 standard)
-        insert_pos = html_input.rfind("</body>")
-        html_input = (
-            html_input[:insert_pos]
-            + f'<aside id="{footnote_id}" epub:type="footnote"><p>{footnote}</p></aside>\n'
-            + html_input[insert_pos:]
-        )
+        print(footnote_texts)
 
-    return html_input
+        self.converted_html = html_input
 
-def convert_section_ids(input_soup: BeautifulSoup):
-    # Convert section IDs to HTML ("^c1150d" -> '<... id="c1150d">')
-    section_pattern = r"\^(\w*)$"
+    def add_obsidian_formatting(self):
+        # Convert Obsidian markdown to HTML
 
-    # add to parent ID
-    for text_node in input_soup.find_all(string=re.compile(section_pattern)):
-        match = re.search(section_pattern, str(text_node))
-        if match:
-            section_id = match.group(1)
-            parent = text_node.parent
-            if parent:
-                parent['id'] = section_id
-            text_node.replace_with(NavigableString(re.sub(section_pattern, '', str(text_node))))
+        # Functions that modify html as text
+        self.in_line_footnotes()
+        self.bottom_page_footnotes()
 
-    return input_soup
+        # Functions that modify html as BeautifulSoup object
+        bs_conv = self.BSConverter(self.converted_html)
+        bs_conv.convert_section_ids()
 
-def add_obsidian_formatting(html_input):
-    # Convert Obsidian markdown to HTML
-    # ADD support for Obsidian-specific syntax
-    soup = BeautifulSoup(html_input, "html.parser")
+        self.converted_html = bs_conv.get_converted_html()
 
-    soup = convert_section_ids(soup)
+    class BSConverter:
+        def __init__(self, input_html) -> None:
+            self.soup = BeautifulSoup(input_html, "html.parser")
 
-    return str(soup)
+        def get_converted_html(self) -> str:
+            return str(self.soup)
 
+        def convert_section_ids(self):
+            # Convert section IDs to HTML ("^c1150d" -> '<... id="c1150d">')
+            input_soup = self.soup
+            section_pattern = r"\^(\w*)$"
 
-def convert_file_to_xhtml(file_path):
-    markdown_text = get_markdown_from_file(file_path)
-    markdown_text = remove_yaml_frontmatter(markdown_text)
-    title = get_title(file_path)
-    html_content = convert_markdown_to_html(markdown_text)
-    html_content = add_obsidian_formatting(html_content)
-    html_content = in_line_footnotes(html_content)
+            # add to parent ID
+            for text_node in input_soup.find_all(string=re.compile(section_pattern)):
+                match = re.search(section_pattern, str(text_node))
+                if match:
+                    section_id = match.group(1)
+                    parent = text_node.parent
+                    if parent:
+                        parent['id'] = section_id
+                    text_node.replace_with(NavigableString(re.sub(section_pattern, '', str(text_node))))
+
+            self.soup = input_soup
+
+def convert_file_to_xhtml(file_path: str):
+    md_conv = MDConverter(get_markdown_from_file(file_path))
+    title = md_conv.get_title(file_path)
+    md_conv.remove_yaml_frontmatter()
+
+    html_conv = HTMLConverter(md_conv.convert_markdown_to_html())
+    html_conv.add_obsidian_formatting()
+    html_content = html_conv.get_converted_html()
 
     # create XHTML file
     new_file_path = file_path.replace(".md", ".xhtml")
