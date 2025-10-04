@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+from pathlib import Path 
 from rich.logging import RichHandler
 from markdown_it import MarkdownIt
 from bs4 import BeautifulSoup
@@ -18,10 +19,10 @@ logging.basicConfig(
 md = MarkdownIt()
 log = logging.getLogger("rich")
 
-def get_markdown_from_file(file_path) -> str:
-        log.debug("Reading Markdown file: %s", file_path)
-        with open(file_path, "r", encoding="utf-8") as f:
-            return f.read()
+def get_markdown_from_file(file_path: Path) -> str:
+    log.debug("Reading Markdown file: %s", file_path)
+    with open(file_path, "r", encoding="utf-8") as f:
+        return f.read()
 
 class MDConverter:
     def __init__(self, markdown_text: str) -> None:
@@ -40,9 +41,9 @@ class MDConverter:
                 self.markdown_text = _markdown_text[end_idx + 3 :].strip()
                 return
             
-    def get_title(self, file_path: str):
+    def get_title(self, file_path: Path):
         log.debug("Getting title from file path: %s", file_path)
-        return os.path.splitext(os.path.basename(file_path))[0]
+        return file_path.stem
     
     def get_markdown(self) -> str:
         return self.markdown_text
@@ -108,7 +109,7 @@ class HTMLConverter:
 
             self.soup = input_soup
 
-def convert_file_to_xhtml(file_path: str):
+def convert_file_to_xhtml(file_path: Path, save_dir: Path | None = None) -> Path:
     md_conv = MDConverter(get_markdown_from_file(file_path))
     title = md_conv.get_title(file_path)
     md_conv.remove_yaml_frontmatter()
@@ -118,7 +119,9 @@ def convert_file_to_xhtml(file_path: str):
     html_content = html_conv.get_converted_html()
 
     # create XHTML file
-    new_file_path = file_path.replace(".md", ".xhtml")
+    new_file_path = file_path.with_suffix(".xhtml")
+    if save_dir:
+        new_file_path = Path(save_dir) / new_file_path.name
 
     xhtml_content = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -140,5 +143,19 @@ def convert_file_to_xhtml(file_path: str):
 
     return new_file_path
 
+def convert_directory_to_xhtml(directory_path: Path):
+    tempdir: Path = directory_path.parent / f"{directory_path.name}_temp"
+    create_temp_directory(tempdir)
+
+    for root, _, files in os.walk(directory_path):
+        for file in files:
+            if file.endswith(".md"):
+                file_path = Path(root) / file
+                convert_file_to_xhtml(file_path, save_dir=tempdir)
+
+def create_temp_directory(temp_dir: Path):
+    if not os.path.exists(temp_dir):
+        os.makedirs(temp_dir)
+
 if __name__ == "__main__":
-    convert_file_to_xhtml("tests/examples/one.md")
+    convert_directory_to_xhtml(Path("tests/examples/"))
