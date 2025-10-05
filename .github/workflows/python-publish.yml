@@ -13,7 +13,7 @@ on:
     types: [published]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   release-build:
@@ -75,9 +75,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Create zip
+        run: |
+          zip -j tests/example.zip tests/example/*
+
       # Upload to release, example zip
-      - name: Create example zip
-        uses: actions/upload-artifact@v4
+      - name: Uplode example zip
+        uses: svenstaro/upload-release-action@v2
         with:
-          name: example-zip
-          path: tests/examples/
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: tests/example.zip
+          asset_name: example_vault.zip
+          tag: ${{ github.ref }}
+          overwrite: true
