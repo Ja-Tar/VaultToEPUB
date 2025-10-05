@@ -3,10 +3,10 @@ name = "vaulttoepub"
 version = "0.0.1"
 description = "A tool to convert Vault notes to EPUB format"
 authors = [
-    { name="JaTar", email="___@example.com" }
+    { name="JaTar" }
 ]
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.13"
 license = "MIT"
 dependencies = [
     "rich",

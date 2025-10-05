@@ -68,3 +68,16 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
+  
+  generate-example:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      # Upload to release, example zip
+      - name: Create example zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: example-zip
+          path: tests/examples/
