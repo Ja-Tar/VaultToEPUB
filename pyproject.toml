@@ -1,6 +1,6 @@
 [project]
 name = "vaulttoepub"
-version = "0.0.1"
+version = "0.0.2"
 description = "A tool to convert Vault notes to EPUB format"
 authors = [
     { name="JaTar", email="___@example.com" }
