@@ -9,7 +9,6 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag, NavigableString
 
 from .obsidian_classes import Header, BottomFootnote, InlineFootnote, SectionID, InLineLink
-from .files_classes import MDFile, CombinedMDFile
 
 logging.basicConfig(
     level="INFO",
@@ -157,7 +156,7 @@ def normalize_file_name(file_path: Path) -> Path:
     normalized_name = normalized_name.strip('_')
     return file_path.with_name(normalized_name).with_suffix(file_path.suffix)
 
-def convert_file_to_xhtml(file_path: Path, save_dir: Path | None = None) -> MDFile:
+def convert_file_to_xhtml(file_path: Path, save_dir: Path | None = None) -> Path:
     md_conv = MDConverter(get_markdown_from_file(file_path))
     title = Header(md_conv.get_title(file_path))
     md_conv.remove_yaml_frontmatter()
@@ -188,7 +187,7 @@ def convert_file_to_xhtml(file_path: Path, save_dir: Path | None = None) -> MDFi
 
     save_file(new_file_path, xhtml_content)
 
-    return MDFile(new_file_path)
+    return new_file_path
 
 def generate_xhtml_path(file_path: Path, save_dir: Path | None = None) -> Path:
     new_file_path = file_path.with_suffix(".xhtml")
@@ -201,58 +200,10 @@ def save_file(new_file_path: Path, xhtml_content: str):
     with open(new_file_path, "w", encoding="utf-8") as f:
         f.write(xhtml_content)
 
-def combine_files_to_xhtml(file_paths: list[Path], filename: str, save_dir: Path | None = None) -> CombinedMDFile:
-    title = Header(filename)
-    xhtml_content = (
-        '<?xml version="1.0" encoding="UTF-8"?>\n'
-        "<!DOCTYPE html>\n"
-        '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">\n'
-        "<head>\n"
-        '  <meta charset="utf-8"/>\n'
-        f"  <title>{title.text}</title>\n"
-        "</head>\n"
-        "<body>\n"
-        f'<h1 id="{title.id}">{title.text}</h1>\n'
-    )
+def convert_directory_to_xhtml(directory_path: Path, tempdir: Path) -> list[Path]:
+    converted_files: list[Path] = []
 
-    for _, file_path in enumerate(file_paths):
-        md_conv = MDConverter(get_markdown_from_file(file_path))
-        title = Header(md_conv.get_title(file_path)) # Every title is a header <h1> with section
-        md_conv.remove_yaml_frontmatter()
-
-        html_conv = HTMLConverter(md_conv.convert_markdown_to_html())
-        html_conv.add_obsidian_formatting()
-        html_content = html_conv.get_converted_html()
-
-        xhtml_content += (
-            f'<section role="doc-chapter" epub:type="chapter" aria-labelledby="{title.id}">\n'
-            f'<h1 id="{title.id}">{title.text}</h1>\n'
-            f'{html_content}\n'
-            "</section>\n"
-        )
-    
-    xhtml_content += "</body>\n</html>"
-
-    new_file_path = generate_xhtml_path(Path(filename).with_suffix(".xhtml"), save_dir)
-    save_file(new_file_path, xhtml_content)
-
-    return CombinedMDFile(new_file_path, [MDFile(fp) for fp in file_paths])
-
-def convert_directory_to_xhtml(directory_path: Path, tempdir: Path, f_to_one_file: bool) -> list[CombinedMDFile | MDFile]:
-    converted_files: list[CombinedMDFile | MDFile] = []
-
-    for root, dirs, files in os.walk(directory_path):
-        if not dirs and f_to_one_file:
-            combine_files = []
-            for file in files:
-                if file.endswith(".md"):
-                    file_path = Path(root) / file
-                    combine_files.append(file_path)
-            if combine_files:
-                log.info("Last folder detected, combining %s files into one", len(combine_files))
-                filename = Path(root).name
-                converted_files.append(combine_files_to_xhtml(combine_files, filename, save_dir=tempdir / "OEBPS" / "Text"))
-                continue
+    for root, _, files in os.walk(directory_path):
         for file in files:
             if file.endswith(".md"):
                 file_path = Path(root) / file
@@ -267,7 +218,7 @@ def create_epub_temp_directory(temp_dir: Path):
         if not os.path.exists(temp_dir / directory):
             os.makedirs(temp_dir / directory)
 
-def create_epub_config_files(temp_dir: Path, converted_files: list[CombinedMDFile | MDFile], custom_css_file: Path | None = None):
+def create_epub_config_files(temp_dir: Path, converted_files: list[Path], custom_css_file: Path | None = None):
     generate_mimetype_file(temp_dir)
     generate_container_xml(temp_dir)
     generate_default_css(temp_dir)
@@ -315,20 +266,15 @@ def generate_default_css(temp_dir: Path):
     
     log.info("Created default CSS file at: %s", css_path)
 
-def generate_content_opf(temp_dir: Path, converted_files: list[CombinedMDFile | MDFile], custom_css_file: Path | None = None):
+def generate_content_opf(temp_dir: Path, converted_files: list[Path], custom_css_file: Path | None = None):
     content_opf_path = temp_dir / "OEBPS" / "content.opf"
     
     manifest_items: list[str] = []
     spine_items: list[str] = []
     #TODO Add handling for images and custom CSS
-    #TODO Add support for combined files
     for _, md_file in enumerate(converted_files):
-        if isinstance(md_file, CombinedMDFile):
-            manifest_items.append(f'<item id="{md_file.name}" href="Text/{md_file.filename}" media-type="application/xhtml+xml" properties="rendition:flow-scrolled-doc"/>')
-            spine_items.append(f'<itemref idref="{md_file.name}"/>')
-        else:
-            manifest_items.append(f'<item id="{md_file.name}" href="Text/{md_file.filename}" media-type="application/xhtml+xml"/>')
-            spine_items.append(f'<itemref idref="{md_file.name}"/>')
+        manifest_items.append(f'<item id="{md_file.stem}" href="Text/{md_file.name}" media-type="application/xhtml+xml"/>')
+        spine_items.append(f'<itemref idref="{md_file.stem}"/>')
     
     manifest = (
         '<?xml version="1.0" encoding="utf-8"?>\n'
@@ -351,16 +297,19 @@ def generate_content_opf(temp_dir: Path, converted_files: list[CombinedMDFile | 
     save_file(content_opf_path, manifest)
     log.info("Created content.opf at: %s", content_opf_path)
 
-def generate_epub(directory_path: Path, f_to_one_file: bool, output_path: Path | None = None):
+def generate_epub(directory_path: Path, keep_temp: bool, output_path: Path | None = None):
     tempdir: Path = directory_path.parent / f"{directory_path.name}_temp"
     create_epub_temp_directory(tempdir)
-    converted_files = convert_directory_to_xhtml(directory_path, tempdir, f_to_one_file)
+    converted_files = convert_directory_to_xhtml(directory_path, tempdir)
     create_epub_config_files(tempdir, converted_files)
 
     if output_path is None:
         output_path = directory_path.parent / f"{directory_path.name}.epub"
     
     generate_epub_file(tempdir, output_path)
+    if not keep_temp:
+        import shutil
+        shutil.rmtree(tempdir)
 
 def generate_epub_file(temp_dir: Path, output_path: Path):
     # Create the final EPUB file from the temp directory

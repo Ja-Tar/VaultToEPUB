@@ -9,17 +9,6 @@
             "args": [
                 "${workspaceFolder}/tests/examples"
             ]
-        },
-        {
-            "justMyCode": true,
-            "name": "Run with folder combining: vaulttoepub",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "vaulttoepub",
-            "args": [
-                "${workspaceFolder}/tests/examples",
-                "-f"
-            ]
         }
     ]
 }
