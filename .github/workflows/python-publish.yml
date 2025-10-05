@@ -77,15 +77,14 @@ jobs:
 
       - name: Create zip
         run: |
-          cd ./tests
-          zip example.zip ./example/
+          zip -r example.zip /tests/example/
 
       # Upload to release, example zip
       - name: Uplode example zip
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: tests/example.zip
+          file: example.zip
           asset_name: example_vault.zip
           tag: ${{ github.ref }}
           overwrite: true
