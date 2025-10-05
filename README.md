@@ -17,4 +17,5 @@ This is an Python command-line tool that converts a directory with obsidian flav
    ```
 
 > [!NOTE]
-> You can dowland example vault from [here](
+> You can dowland example vault from [here](https://github.com/Ja-Tar/VaultToEPUB/releases/latest/download/example_vault.zip)
+> Then run the tool with the path to the `examples` directory inside.
