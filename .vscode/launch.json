@@ -2,10 +2,24 @@
     "configurations": [
         {
             "justMyCode": true,
-            "name": "Debuger języka Python: Moduł",
+            "name": "Run normal: vaulttoepub",
             "type": "debugpy",
             "request": "launch",
-            "module": "vaulttoepub.vtoepub"
+            "module": "vaulttoepub",
+            "args": [
+                "${workspaceFolder}/tests/examples"
+            ]
+        },
+        {
+            "justMyCode": true,
+            "name": "Run with folder combining: vaulttoepub",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "vaulttoepub",
+            "args": [
+                "${workspaceFolder}/tests/examples",
+                "-f"
+            ]
         }
     ]
 }
