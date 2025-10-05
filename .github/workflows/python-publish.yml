@@ -77,7 +77,7 @@ jobs:
 
       - name: Create zip
         run: |
-          zip -j tests/example.zip tests/example/*
+          zip tests/example.zip tests/example/
 
       # Upload to release, example zip
       - name: Uplode example zip
